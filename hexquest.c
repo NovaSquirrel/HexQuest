@@ -19,7 +19,7 @@
 
 #define PNAME "HexQuest"
 #define PDESC "MUCK extensions for HexChat"
-#define PVERSION "0.01"
+#define PVERSION "0.02"
 #include "hexchat-plugin.h"
 #include <stdio.h>
 #include <string.h>
@@ -226,7 +226,8 @@ static int RawServer_cb(char *word[], char *word_eol[], void *userdata) {
     char Name[100];
     if(!strcmp(word_eol[1], IdleTimeoutString)) {
       hexchat_print(ph, "Idle timeout, please reconnect manually");
-      hexchat_command(ph, "QUIT .");
+      hexchat_command(ph, "server 127.0.0.1");
+      hexchat_command(ph, "timer 1 quit");
     } else if(word_eol[1][0]!=2 && (WildMatch(word_eol[1], WhisperYou))) {
       WildExtract(word_eol[1], WhisperYou, Output, 2);
       hexchat_commandf(ph, "recv \x02%s", word_eol[1]);
