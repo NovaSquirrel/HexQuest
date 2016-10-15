@@ -39,10 +39,10 @@ If a list of rooms doesn't appear already, use `wa`, and see if there's any with
 
 Now that you're somewhere with people, try talking to the people there. To send a message to the room, prefix a line with `"`, or `ooc ` for an out of character message. Just like on IRC, actions are available too. You may either use `/me` as normal or prefix a line with `:`. OOC messages can contain actions too, as in `ooc :whatever`. You can read a description of the people around you with `look Name`.
 
-There are two major forms of private messages. There's whispering (`wh Name=Text to send`), which only works within the same room, and paging (with HexQuest you can just use `/query Name` and open a standard query window to page) which works across the whole server.
+There are two major forms of private messages. There's whispering (`wh Name=Text to send`), which only works within the same room, and paging (with HexQuest you can just use `/query Name` and open a standard query window to page. With other clients the syntax is `p Name=Text`, similar to whispers) which works across the whole server.
 
-To get your own character, use the form [here](http://www.spindizzy.org/nwp/get-started/) can be slow, or contact a wizard (which is like an administrator) if any are available for a faster response. You can use `wizzes` to see which wizards are available, and you can go `/query` one of them and ask them to make a character for you.
+To get your own character, use the form [here](http://www.spindizzy.org/nwp/get-started/) (which can be slow), or contact a wizard (which is like an administrator) if any are available for a faster response. You can use `wizzes` to see which wizards are available, and you can go `/query` one of them and ask them to make a character for you.
 
-One thing to keep on mind is that, unlike IRC, you cannot just idle all day. There is a timer that will disconnect you if you're idle for too long, so try to connect to the MUCK when you're actually around.
+Unlike on IRC, there is a timer that disconnects users that have been idle for too long, so connect only when you're going to be around.
 
 More commands listed at [Things New Folks Should Know](http://www.spindizzy.org/nwp/things-new-folks-should-know/).
