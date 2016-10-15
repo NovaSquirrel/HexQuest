@@ -236,6 +236,7 @@ static int RawServer_cb(char *word[], char *word_eol[], void *userdata) {
       return HEXCHAT_EAT_HEXCHAT;
     } else if(word_eol[1][0]!=2 && (WildMatch(word_eol[1], WhisperThem))) {
       hexchat_commandf(ph, "recv \x02%s", word_eol[1]);
+      hexchat_commandf(ph, "gui color 3");
       return HEXCHAT_EAT_HEXCHAT;
     } else if(WildMatch(word_eol[1], ConnectedAs)) {
       // get the name
