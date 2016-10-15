@@ -217,7 +217,7 @@ static int RawServer_cb(char *word[], char *word_eol[], void *userdata) {
     char CharacterName[100];
     char Password[100];
     if(hexchat_pluginpref_get_str(ph, "character_name", CharacterName) && hexchat_pluginpref_get_str(ph, "character_pass", Password))
-      hexchat_commandf(ph, "timer 2 quote connect %s %s", CharacterName, Password);
+      hexchat_commandf(ph, "quote connect %s %s", CharacterName, Password);
   }
 
   if(IsMUCK()) {
