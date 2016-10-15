@@ -50,7 +50,7 @@ static const char *WhisperYou = "You whisper, \"*\" to *.";
 static const char *WhisperThem = "* whispers, \"*\" to you.";
 
 // Feature toggles
-static int PageTabs, WhisperTabs, AutoQuote, IgnoreAway, EatPages, BoldWhisper;
+static int PageTabs, WhisperTabs, AutoQuote, IgnoreAway, EatPages, BoldWhisper, FlashWhisper;
 
 void hexchat_plugin_get_info(char **name, char **desc, char **version, void **reserved) {
   *name = PNAME;
@@ -237,6 +237,8 @@ static int RawServer_cb(char *word[], char *word_eol[], void *userdata) {
     } else if(word_eol[1][0]!=2 && (WildMatch(word_eol[1], WhisperThem))) {
       hexchat_commandf(ph, "recv \x02%s", word_eol[1]);
       hexchat_commandf(ph, "gui color 3");
+      if(FlashWhisper)
+        hexchat_commandf(ph, "gui flash");
       return HEXCHAT_EAT_HEXCHAT;
     } else if(WildMatch(word_eol[1], ConnectedAs)) {
       // get the name
@@ -337,7 +339,8 @@ static int Settings_cb(char *word[], char *word_eol[], void *userdata) {
     hexchat_get_prefs(ph, "id", NULL, &ServerID);
   } else if(!strcmp(word[2], "page_tabs") || !strcmp(word[2], "whisper_tabs") ||
             !strcmp(word[2], "auto_quote") || !strcmp(word[2], "ignore_away") ||
-            !strcmp(word[2], "eat_pages") || !strcmp(word[2], "bold_whisper")) {
+            !strcmp(word[2], "eat_pages") || !strcmp(word[2], "bold_whisper") ||
+            !strcmp(word[2], "flash_whisper")) {
     int NewValue = TextToBoolean(word[2]);
     if(NewValue == -1)
       hexchat_print(ph, "Invalid value (use on/off)\n");
@@ -358,6 +361,8 @@ static int Settings_cb(char *word[], char *word_eol[], void *userdata) {
         EatPages = NewValue;
       else if(!strcmp(word[2], "bold_whisper"))
         BoldWhisper = NewValue;
+      else if(!strcmp(word[2], "flash_whisper"))
+        FlashWhisper = NewValue;
     }
   } else if(!strcmp(word[2], "muck_identifier") || !strcmp(word[2], "idle_timeout_string")) {
     hexchat_pluginpref_set_str(ph, word[2], word_eol[3]);
@@ -391,6 +396,7 @@ int hexchat_plugin_init(hexchat_plugin *plugin_handle,
   IgnoreAway = GetIntOrDefault("ignore_away", 1);
   EatPages = GetIntOrDefault("eat_pages", 1);
   BoldWhisper = GetIntOrDefault("bold_whisper", 1);
+  FlashWhisper = GetIntOrDefault("flash_whisper", 1);
 
   hexchat_pluginpref_get_str(ph, "idle_timeout_string", IdleTimeoutString);
   hexchat_pluginpref_get_str(ph, "muck_identifier", MuckIdentifier);
