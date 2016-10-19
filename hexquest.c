@@ -84,6 +84,7 @@ static int IsQuery() {
 }
 
 static int KeyPress_cb(char *word[], void *userdata) {
+  if(IsMUCK() && !*hexchat_get_info(ph, "inputbox") && !IsQuery() && (!strcmp(word[1], "65289"))) {
     hexchat_commandf(ph, "settext wh %s=", WhisperTo);
     hexchat_commandf(ph, "setcursor %i", 12+strlen(WhisperTo));
   }
