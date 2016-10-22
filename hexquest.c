@@ -274,7 +274,7 @@ static int RawServer_cb(char *word[], char *word_eol[], void *userdata) {
         return HEXCHAT_EAT_HEXCHAT;
     } else if(WildMatch(word_eol[1], PageActYou)) {
       WildExtract(word_eol[1], PageActYou, Output, 2);
-      RemoveFirstWord(Output[0], NULL);
+      RemoveFirstWord(Output[0], Name);
 
       // Switch to the appropriate context, make an event, and switch back
       hexchat_context *Old = hexchat_get_context(ph);
@@ -282,6 +282,14 @@ static int RawServer_cb(char *word[], char *word_eol[], void *userdata) {
       if(!Context)
         return HEXCHAT_EAT_NONE;
       hexchat_set_context(ph, Context);
+
+      char *Apostrophe = strrchr(Name, '\'');
+      if(Apostrophe && Apostrophe != Name && Apostrophe[1] == 's') { // fix 's
+        memmove(Output[0]+3, Output[0], strlen(Output[0])+1);
+        Output[0][0] = '\'';
+        Output[0][1] = 's';
+        Output[0][2] = ' ';
+      }
       hexchat_emit_print(ph, "Your Action", hexchat_get_info(ph, "nick"), Output[0], "", NULL);
       hexchat_set_context(ph, Old);
 
@@ -291,6 +299,15 @@ static int RawServer_cb(char *word[], char *word_eol[], void *userdata) {
     } else if(WildMatch(word_eol[1], PageActThem)) {
       WildExtract(word_eol[1], PageActThem, Output, 2);
       RemoveFirstWord(Output[0], Name);
+
+      char *Apostrophe = strrchr(Name, '\'');
+      if(Apostrophe && Apostrophe != Name && Apostrophe[1] == 's') { // fix 's
+        memmove(Output[0]+3, Output[0], strlen(Output[0])+1);
+        Output[0][0] = '\'';
+        Output[0][1] = 's';
+        Output[0][2] = ' ';
+        *Apostrophe = 0;
+      }
       hexchat_commandf(ph, "recv :%s!_@_ PRIVMSG you :\x01" "ACTION %s\x01", Name, Output[0]);
       WildExtractFree(Output, 2);
       if(EatPages)
