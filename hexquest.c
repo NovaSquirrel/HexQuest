@@ -236,7 +236,23 @@ static int RawServer_cb(char *word[], char *word_eol[], void *userdata) {
       return HEXCHAT_EAT_HEXCHAT;
     } else if(word_eol[1][0]!=2 && (WildMatch(word_eol[1], WhisperThem))) {
       hexchat_commandf(ph, "recv \x02%s", word_eol[1]);
-      hexchat_commandf(ph, "gui color 3");
+
+      // find the server tab and switch to its context temporarily
+      hexchat_context *Context = hexchat_get_context(ph);
+      int Id;  
+      hexchat_get_prefs(ph, "id", NULL, &Id);
+
+      // find the tab via searching through all tabs
+      hexchat_list *list = hexchat_list_get(ph, "channels");
+      if(list) {
+        while(hexchat_list_next(ph, list))
+          if(hexchat_list_int(ph, list, "type")==1 && hexchat_list_int(ph, list, "id")==Id) // server tab, and same ID
+            if(hexchat_set_context(ph,(hexchat_context *)hexchat_list_str(ph, list, "context")))
+              hexchat_commandf(ph, "gui color 3");
+        hexchat_list_free(ph, list);
+      }
+      hexchat_set_context(ph, Context);
+
       if(FlashWhisper)
         hexchat_commandf(ph, "gui flash");
       return HEXCHAT_EAT_HEXCHAT;
