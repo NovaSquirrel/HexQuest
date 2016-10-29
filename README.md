@@ -3,6 +3,15 @@ a HexChat plugin for making MUCKs easy to use through HexChat.
 Totally not related to a certain cereal-based shoot-em-up.
 Simply add a MUCK to the server list as you would an IRC server.
 
+This way you get all the features HexChat has while using MUCK servers, and more features:
+
+ * Marker line for new text
+ * Spell check
+ * Character counter (if using my plugin for that)
+ * Separate tabs for pages, where you can just type into them without typing "p name=text"
+ * See your previous conversation with someone when you page them
+ * Shortcut to speed up whispering to people
+
 ## Features
 Each can be enabled or disabled with `/hquest feature_name on/off`
 
@@ -29,20 +38,4 @@ Additionally, if `bold_whisper` is enabled, pressing the tab key on the server t
  * No notices when your name is said.
 
 ## A MUCK tutorial for IRC users
-This is written with [SpinDizzy](http://www.spindizzy.org/nwp/) in mind specifically. Also a work in progress.
-
-Use `/hquest account guest guest` to tell HexQuest to use a guest account when connecting. Afterwards, connect with `/server muck.spindizzy.org 7072`. Later when/if you create a character, you can run `/hquest account` again with the new information.
-
-Now you're in! In a MUCK, you're only in one place at a time, therefore most of the activity will take place in the server tab. Messages typed here will be sent as server commands, and do not start with slashes like IRC ones.
-
-If a list of rooms doesn't appear already, use `wa`, and see if there's any with any people in it. You will have to actually travel to that location, and there will usually be a list of directions in the form of a series of commands you should enter. If not, there will be coordinates (such as N0 E0) and you can travel to that location with `luge latitude longitude`.
-
-Now that you're somewhere with people, try talking to the people there. To send a message to the room, prefix a line with `"`, or `ooc ` for an out of character message. Just like on IRC, actions are available too. You may either use `/me` as normal or prefix a line with `:`. OOC messages can contain actions too, as in `ooc :whatever`. You can read a description of the people around you with `look Name`.
-
-There are two major forms of private messages. There's whispering (`wh Name=Text to send`), which only works within the same room, and paging (with HexQuest you can just use `/query Name` and open a standard query window to page. With other clients the syntax is `p Name=Text`, similar to whispers) which works across the whole server.
-
-To get your own character, use the form [here](http://www.spindizzy.org/nwp/get-started/) (which can be slow), or contact a wizard (which is like an administrator) if any are available for a faster response. You can use `wizzes` to see which wizards are available, and you can go `/query` one of them and ask them to make a character for you.
-
-Unlike on IRC, there is a timer that disconnects users that have been idle for too long, so connect only when you're going to be around.
-
-More commands listed at [Things New Folks Should Know](http://www.spindizzy.org/nwp/things-new-folks-should-know/).
+[NovaSquirrel's MUCK tutorial, using HexChat](http://wiki.novasquirrel.com/MUCK%20tutorial).
