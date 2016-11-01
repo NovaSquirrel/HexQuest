@@ -19,7 +19,7 @@
 
 #define PNAME "HexQuest"
 #define PDESC "MUCK extensions for HexChat"
-#define PVERSION "0.02"
+#define PVERSION "0.03"
 #include "hexchat-plugin.h"
 #include <stdio.h>
 #include <string.h>
@@ -32,9 +32,11 @@
 #else
 #include <fnmatch.h>
 #endif
+#define MAX_SERVERS 5
+
 static hexchat_plugin *ph;
 
-static int ServerID = -1;
+static int ServerId[MAX_SERVERS];
 static char MuckIdentifier[100] = "#$#mcp version:";
 static int MuckIdentifierLen = 15;
 static char IdleTimeoutString[512] = "A large crane gently grabs you, pulls you towards a large plastic partition, and drops you into the prize bin.  You roll to someplace out of the muck.";
@@ -50,7 +52,7 @@ static const char *WhisperYou = "You whisper, \"*\" to *.";
 static const char *WhisperThem = "* whispers, \"*\" to you.";
 
 // Feature toggles
-static int PageTabs, WhisperTabs, AutoQuote, IgnoreAway, EatPages, BoldWhisper, FlashWhisper;
+static int PageTabs, WhisperTabs, AutoQuote, IgnoreAway, EatPages, BoldWhisper, FlashWhisper, MultiPages;
 
 void hexchat_plugin_get_info(char **name, char **desc, char **version, void **reserved) {
   *name = PNAME;
@@ -73,9 +75,13 @@ static int GetIntOrDefault(const char *Name, int Default) {
 
 // Checks if the current tab belongs to a MUCK, and returns 1 if true
 static int IsMUCK() {
-  int Id;  
+  int Id, i;
   hexchat_get_prefs(ph, "id", NULL, &Id);
-  return Id == ServerID;
+  // return 1 only if it's found
+  for(i=0; i<MAX_SERVERS; i++)
+    if(ServerId[i] == Id)
+      return 1;
+  return 0;
 }
 
 // Checks if the current tab is a query, returns 1 if true
@@ -212,7 +218,9 @@ static int TextToBoolean(const char *Text) {
 static int RawServer_cb(char *word[], char *word_eol[], void *userdata) {
   if(!memcmp(word_eol[1], MuckIdentifier, MuckIdentifierLen)) {
     hexchat_print(ph, "Identified as a MUCK server\n");
-    hexchat_get_prefs(ph, "id", NULL, &ServerID);
+    int Id;
+    hexchat_get_prefs(ph, "id", NULL, &Id);
+    ServerId[0] = Id;
 
     char CharacterName[100];
     char Password[100];
@@ -339,12 +347,28 @@ static int AwayBack_cb(char *word[], char *word_eol[], void *userdata) {
   return HEXCHAT_EAT_NONE;
 }
 
+static const char *TabName() {
+  static char Name[64];
+  const char *Tab = hexchat_get_info(ph, "channel");
+  if(!Tab)
+    return "";
+  // not a zombie? return the name directly
+  if(!strstr(Tab, "(Z)"))
+    return Tab;
+
+  strcpy(Name, Tab);
+  char *Paren = strchr(Name, '(');
+  if(Paren)
+    *Paren = 0;
+  return Name;
+}
+
 static int TrapSay_cb(char *word[], char *word_eol[], void *userdata) {
   if(IsMUCK() && AutoQuote) {
     if(!IsQuery())
       hexchat_commandf(ph, "quote %s", word_eol[1]);
     else
-      hexchat_commandf(ph, "quote page %s=%s", hexchat_get_info(ph, "channel"), word_eol[1]);
+      hexchat_commandf(ph, "quote page %s=%s", TabName(), word_eol[1]);
     return HEXCHAT_EAT_HEXCHAT;
   }
   return HEXCHAT_EAT_NONE;
@@ -355,25 +379,24 @@ static int TrapAction_cb(char *word[], char *word_eol[], void *userdata) {
     if(!IsQuery())
       hexchat_commandf(ph, "quote :%s", word_eol[2]);
     else
-      hexchat_commandf(ph, "quote page %s=:%s", hexchat_get_info(ph, "channel"), word_eol[2]);
+      hexchat_commandf(ph, "quote page %s=:%s", TabName(), word_eol[2]);
     return HEXCHAT_EAT_HEXCHAT;
   }
   return HEXCHAT_EAT_NONE;
 }
 
 static int Settings_cb(char *word[], char *word_eol[], void *userdata) {
-
   if(!strcmp(word[2], "account")) {
     hexchat_pluginpref_set_str(ph, "character_name", word[3]);
     hexchat_pluginpref_set_str(ph, "character_pass", word[4]);
     hexchat_print(ph, "Character name and password changed");
   } else if(!strcmp(word[2], "force")) {
     hexchat_print(ph, "MUCK mode forced on\n");
-    hexchat_get_prefs(ph, "id", NULL, &ServerID);
+    hexchat_get_prefs(ph, "id", NULL, &ServerId[0]);
   } else if(!strcmp(word[2], "page_tabs") || !strcmp(word[2], "whisper_tabs") ||
             !strcmp(word[2], "auto_quote") || !strcmp(word[2], "ignore_away") ||
             !strcmp(word[2], "eat_pages") || !strcmp(word[2], "bold_whisper") ||
-            !strcmp(word[2], "flash_whisper")) {
+            !strcmp(word[2], "flash_whisper") || !strcmp(word[2], "multi_pages")) {
     int NewValue = TextToBoolean(word[2]);
     if(NewValue == -1)
       hexchat_print(ph, "Invalid value (use on/off)\n");
@@ -422,6 +445,7 @@ int hexchat_plugin_init(hexchat_plugin *plugin_handle,
   *plugin_desc = PDESC;
   *plugin_version = PVERSION;
   hexchat_print(ph, "HexQuest loaded");
+  memset(ServerId, -1, sizeof(ServerId)); // due to two's complement this will get set to negative 1
 
   PageTabs = GetIntOrDefault("page_tabs", 1);
   WhisperTabs = GetIntOrDefault("whisper_tabs", 0);
@@ -430,6 +454,7 @@ int hexchat_plugin_init(hexchat_plugin *plugin_handle,
   EatPages = GetIntOrDefault("eat_pages", 1);
   BoldWhisper = GetIntOrDefault("bold_whisper", 1);
   FlashWhisper = GetIntOrDefault("flash_whisper", 1);
+  MultiPages = GetIntOrDefault("multi_pages", 1);
 
   hexchat_pluginpref_get_str(ph, "idle_timeout_string", IdleTimeoutString);
   hexchat_pluginpref_get_str(ph, "muck_identifier", MuckIdentifier);
@@ -444,4 +469,3 @@ int hexchat_plugin_init(hexchat_plugin *plugin_handle,
   hexchat_hook_print(ph, "Key Press", HEXCHAT_PRI_NORM, KeyPress_cb, NULL); 
   return 1;
 }
-
