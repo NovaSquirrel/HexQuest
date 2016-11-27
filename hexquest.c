@@ -19,7 +19,7 @@
 
 #define PNAME "HexQuest"
 #define PDESC "MUCK extensions for HexChat"
-#define PVERSION "0.03"
+#define PVERSION "0.04"
 #include "hexchat-plugin.h"
 #include <stdio.h>
 #include <string.h>
@@ -33,6 +33,7 @@
 #include <fnmatch.h>
 #endif
 #define MAX_SERVERS 5
+#define MAX_ZOMBIES 3
 
 static hexchat_plugin *ph;
 
@@ -41,6 +42,9 @@ static char MuckIdentifier[100] = "#$#mcp version:";
 static int MuckIdentifierLen = 15;
 static char IdleTimeoutString[512] = "A large crane gently grabs you, pulls you towards a large plastic partition, and drops you into the prize bin.  You roll to someplace out of the muck.";
 static char WhisperTo[100]="";
+static char ZombieCommand[MAX_ZOMBIES][100];
+static char ZombieName[MAX_ZOMBIES][100];
+int HighlightColor = 9;
 
 // Mask constants
 static const char *PageSayYou = "You page, \"*\" to *.";
@@ -229,6 +233,16 @@ static int RawServer_cb(char *word[], char *word_eol[], void *userdata) {
   }
 
   if(IsMUCK()) {
+    for(int i=0; i<MAX_ZOMBIES; i++)
+      if(ZombieName[i][0] && !memcmp(word_eol[1], ZombieName[i], strlen(ZombieName[i]))) {
+        char *StartOfText = strchr(word_eol[1], '>');
+        if(StartOfText) {
+          char QueryName[20];
+          sprintf(QueryName, "$Z%i", i);
+          hexchat_commandf(ph, "recv :%s!_@_ PRIVMSG you :%s", QueryName, StartOfText+2);
+          return HEXCHAT_EAT_HEXCHAT;
+        }
+      }
     // Don't auto reconnect if the disconnect happened due to inactivity
     char *Output[5];
     char Name[100];
@@ -363,9 +377,22 @@ static const char *TabName() {
   return Name;
 }
 
+static const char *GetZombiePrefix() {
+  const char *Tab = hexchat_get_info(ph, "channel");
+  if(Tab[0] != '$' || Tab[1] != 'Z')
+    return "";
+  int ZombieNum = Tab[2] - '0';
+  if(ZombieNum < 0 || ZombieNum >= MAX_ZOMBIES)
+    return "";
+  return ZombieCommand[ZombieNum];
+}
+
 static int TrapSay_cb(char *word[], char *word_eol[], void *userdata) {
   if(IsMUCK() && AutoQuote) {
-    if(!IsQuery())
+    const char *Prefix = GetZombiePrefix();
+    if(*Prefix) {
+      hexchat_commandf(ph, "quote %s%s", Prefix, word_eol[1]);
+    } else if(!IsQuery())
       hexchat_commandf(ph, "quote %s", word_eol[1]);
     else
       hexchat_commandf(ph, "quote page %s=%s", TabName(), word_eol[1]);
@@ -376,7 +403,10 @@ static int TrapSay_cb(char *word[], char *word_eol[], void *userdata) {
 
 static int TrapAction_cb(char *word[], char *word_eol[], void *userdata) {
   if(IsMUCK() && AutoQuote) {
-    if(!IsQuery())
+    const char *Prefix = GetZombiePrefix();
+    if(*Prefix) {
+      hexchat_commandf(ph, "quote %s:%s", Prefix, word_eol[2]);
+    } else if(!IsQuery())
       hexchat_commandf(ph, "quote :%s", word_eol[2]);
     else
       hexchat_commandf(ph, "quote page %s=:%s", TabName(), word_eol[2]);
@@ -390,6 +420,21 @@ static int Settings_cb(char *word[], char *word_eol[], void *userdata) {
     hexchat_pluginpref_set_str(ph, "character_name", word[3]);
     hexchat_pluginpref_set_str(ph, "character_pass", word[4]);
     hexchat_print(ph, "Character name and password changed");
+  } else if(!strcmp(word[2], "zombie")) {
+    int ZombieNum = strtol(word[3], NULL, 10);
+    if(ZombieNum < 0 || ZombieNum >= MAX_ZOMBIES) {
+      hexchat_printf(ph, "Invalid zombie number, use 0 to %i\n", 0, MAX_ZOMBIES-1);
+      return HEXCHAT_EAT_ALL;
+    }
+    sprintf(ZombieCommand[ZombieNum], "%s ", word[4]);
+    sprintf(ZombieName[ZombieNum], "%s> ", word[5]);
+    char Temp[50];
+    sprintf(Temp, "zombie_name_%i", ZombieNum);
+    hexchat_pluginpref_set_str(ph, Temp, ZombieName[ZombieNum]);
+    sprintf(Temp, "zombie_action_%i", ZombieNum);
+    hexchat_pluginpref_set_str(ph, Temp, ZombieCommand[ZombieNum]);
+
+    hexchat_printf(ph, "Zombie number %i set to action %s, name %s\n", ZombieNum, word[4], word[5]);
   } else if(!strcmp(word[2], "force")) {
     hexchat_print(ph, "MUCK mode forced on\n");
     hexchat_get_prefs(ph, "id", NULL, &ServerId[0]);
@@ -446,6 +491,8 @@ int hexchat_plugin_init(hexchat_plugin *plugin_handle,
   *plugin_version = PVERSION;
   hexchat_print(ph, "HexQuest loaded");
   memset(ServerId, -1, sizeof(ServerId)); // due to two's complement this will get set to negative 1
+  memset(ZombieCommand, 0, sizeof(ZombieCommand));
+  memset(ZombieName, 0, sizeof(ZombieName));
 
   PageTabs = GetIntOrDefault("page_tabs", 1);
   WhisperTabs = GetIntOrDefault("whisper_tabs", 0);
@@ -455,10 +502,19 @@ int hexchat_plugin_init(hexchat_plugin *plugin_handle,
   BoldWhisper = GetIntOrDefault("bold_whisper", 1);
   FlashWhisper = GetIntOrDefault("flash_whisper", 1);
   MultiPages = GetIntOrDefault("multi_pages", 1);
+  HighlightColor = GetIntOrDefault("highlight_color", 9);
 
   hexchat_pluginpref_get_str(ph, "idle_timeout_string", IdleTimeoutString);
   hexchat_pluginpref_get_str(ph, "muck_identifier", MuckIdentifier);
   MuckIdentifierLen = strlen(MuckIdentifier);
+
+  char Temp[50];
+  for(int i=0; i<MAX_ZOMBIES; i++) {
+    sprintf(Temp, "zombie_name_%i", i);
+    hexchat_pluginpref_get_str(ph, Temp, ZombieName[i]);
+    sprintf(Temp, "zombie_action_%i", i);
+    hexchat_pluginpref_get_str(ph, Temp, ZombieCommand[i]);
+  }
 
   hexchat_hook_command(ph, "", HEXCHAT_PRI_NORM, TrapSay_cb, NULL, 0);
   hexchat_hook_command(ph, "me", HEXCHAT_PRI_NORM, TrapAction_cb, NULL, 0);
