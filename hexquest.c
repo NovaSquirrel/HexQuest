@@ -1,7 +1,7 @@
 /*
  * HexQuest
  *
- * Copyright (C) 2016 NovaSquirrel
+ * Copyright (C) 2016-2017 NovaSquirrel
  *
  * This program is free software: you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -19,7 +19,7 @@
 
 #define PNAME "HexQuest"
 #define PDESC "MUCK extensions for HexChat"
-#define PVERSION "0.04"
+#define PVERSION "0.05"
 #include "hexchat-plugin.h"
 #include <stdio.h>
 #include <string.h>
@@ -33,7 +33,13 @@
 #include <fnmatch.h>
 #endif
 #define MAX_SERVERS 5
-#define MAX_ZOMBIES 3
+#define MAX_ZOMBIES 5
+#define MAX_ECHO_CMD 5
+#define MAX_HIGHLIGHTS 20
+#define HIGHLIGHT_NONE 0
+#define HIGHLIGHT_COLOR 1
+#define HIGHLIGHT_COLOR_TAB 2
+#define HIGHLIGHT_FLASH 3
 
 static hexchat_plugin *ph;
 
@@ -44,7 +50,11 @@ static char IdleTimeoutString[512] = "A large crane gently grabs you, pulls you 
 static char WhisperTo[100]="";
 static char ZombieCommand[MAX_ZOMBIES][100];
 static char ZombieName[MAX_ZOMBIES][100];
+static char EchoCommand[MAX_ECHO_CMD][20];
+static char HighlightWord[MAX_HIGHLIGHTS][30];
 int HighlightColor = 9;
+int HighlightLevel = 0;
+int FlashOnMessage = 0;
 
 // Mask constants
 static const char *PageSayYou = "You page, \"*\" to *.";
@@ -219,6 +229,8 @@ static int TextToBoolean(const char *Text) {
   return -1;
 }
 
+static int ZombieIgnore = 0;
+
 static int RawServer_cb(char *word[], char *word_eol[], void *userdata) {
   if(!memcmp(word_eol[1], MuckIdentifier, MuckIdentifierLen)) {
     hexchat_print(ph, "Identified as a MUCK server\n");
@@ -233,16 +245,85 @@ static int RawServer_cb(char *word[], char *word_eol[], void *userdata) {
   }
 
   if(IsMUCK()) {
+    if(ZombieIgnore) {
+      ZombieIgnore = 0;
+      return HEXCHAT_EAT_NONE;
+    }
+    if(word_eol[1][0] == '@') { // at least one person's name starts with @
+      hexchat_commandf(ph, "recv \x2\x2%s", word_eol[1]);
+      return HEXCHAT_EAT_ALL;
+    }
+    int PageActThem2 = WildMatch(word_eol[1], PageActThem);
+    int PageSayThem2 = WildMatch(word_eol[1], PageSayThem);
+    int NotPrivmsg = !strstr(word_eol[1], "PRIVMSG");
+
     for(int i=0; i<MAX_ZOMBIES; i++)
       if(ZombieName[i][0] && !memcmp(word_eol[1], ZombieName[i], strlen(ZombieName[i]))) {
         char *StartOfText = strchr(word_eol[1], '>');
         if(StartOfText) {
           char QueryName[20];
           sprintf(QueryName, "$Z%i", i);
+          ZombieIgnore = 1;
           hexchat_commandf(ph, "recv :%s!_@_ PRIVMSG you :%s", QueryName, StartOfText+2);
           return HEXCHAT_EAT_HEXCHAT;
         }
       }
+
+    if(HighlightLevel && !PageActThem2 && !PageSayThem2 && !strchr(word_eol[1], 3)
+     && word_eol[1][0]!=2 && NotPrivmsg) { // skip if it's a highlighted thing already
+      char *Input = word_eol[1];
+
+      int HasHighlight = 0;
+      char Lowercase[strlen(Input)+1];
+      strcpy(Lowercase, Input);
+      for(int i=0; Lowercase[i]; i++)
+        Lowercase[i] = tolower(Lowercase[i]);
+      for(int i=0; i<MAX_HIGHLIGHTS; i++)
+        if(HighlightWord[i][0] && strstr(Lowercase, HighlightWord[i])) {
+          HasHighlight = 1;
+          break;
+        }
+
+      if(HasHighlight) {
+        if(HighlightLevel >= 2)
+          hexchat_commandf(ph, "gui color 3");
+        if(HighlightLevel >= 3)
+          hexchat_commandf(ph, "gui flash");
+      
+        char Output[8192];
+        int in = 0, out = 0;
+
+        // Color the line
+        while(Input[in]) {
+          // search for each word
+          int Found = 0;
+          for(int n=0; n<MAX_HIGHLIGHTS; n++) {
+            if(!HighlightWord[n][0])
+              continue;
+            int WordLen = strlen(HighlightWord[n]);
+            if(!memcmp(Lowercase+in, HighlightWord[n], WordLen)) {
+              sprintf(Output+out, "\x03%.2i", HighlightColor);
+              out += 3;
+              memcpy(Output+out, Input+in, WordLen);
+              out += WordLen;
+              Output[out++] = 15; // disable formatting
+              in += WordLen; // skip over the word in the input
+              Found = 1;
+              break;
+            }
+          }
+          if(!Found)
+            Output[out++] = Input[in++];
+        }
+        Output[out] = 0;
+        hexchat_commandf(ph, "recv \x2\x2%s", Output);
+        return HEXCHAT_EAT_ALL;
+      }
+    }
+
+    if(FlashOnMessage) // flash on all messages if you want
+      hexchat_commandf(ph, "gui flash");
+
     // Don't auto reconnect if the disconnect happened due to inactivity
     char *Output[5];
     char Name[100];
@@ -304,7 +385,7 @@ static int RawServer_cb(char *word[], char *word_eol[], void *userdata) {
       WildExtractFree(Output, 2);
       if(EatPages)
         return HEXCHAT_EAT_HEXCHAT;
-    } else if(WildMatch(word_eol[1], PageSayThem)) {
+    } else if(PageSayThem2 && NotPrivmsg) {
       WildExtract(word_eol[1], PageSayThem, Output, 2);
       hexchat_commandf(ph, "recv :%s!_@_ PRIVMSG you :%s", Output[0], Output[1]);
       WildExtractFree(Output, 2);
@@ -334,7 +415,7 @@ static int RawServer_cb(char *word[], char *word_eol[], void *userdata) {
       WildExtractFree(Output, 2);
       if(EatPages)
         return HEXCHAT_EAT_HEXCHAT;
-    } else if(WildMatch(word_eol[1], PageActThem)) {
+    } else if(PageActThem2 && NotPrivmsg) {
       WildExtract(word_eol[1], PageActThem, Output, 2);
       RemoveFirstWord(Output[0], Name);
 
@@ -379,7 +460,7 @@ static const char *TabName() {
 
 static const char *GetZombiePrefix() {
   const char *Tab = hexchat_get_info(ph, "channel");
-  if(Tab[0] != '$' || Tab[1] != 'Z')
+  if(Tab[0] != '$' || Tab[1] != 'Z') // not a zombie
     return "";
   int ZombieNum = Tab[2] - '0';
   if(ZombieNum < 0 || ZombieNum >= MAX_ZOMBIES)
@@ -389,6 +470,13 @@ static const char *GetZombiePrefix() {
 
 static int TrapSay_cb(char *word[], char *word_eol[], void *userdata) {
   if(IsMUCK() && AutoQuote) {
+    // Display echo'd commands on the log
+    for(int i=0; i<MAX_ECHO_CMD; i++)
+      if(EchoCommand[i][0] && !memcmp(word_eol[1], EchoCommand[i], strlen(EchoCommand[i]))) {
+        hexchat_printf(ph, "%s", word_eol[1]);
+        break;
+      }
+
     const char *Prefix = GetZombiePrefix();
     if(*Prefix) {
       hexchat_commandf(ph, "quote %s%s", Prefix, word_eol[1]);
@@ -420,6 +508,32 @@ static int Settings_cb(char *word[], char *word_eol[], void *userdata) {
     hexchat_pluginpref_set_str(ph, "character_name", word[3]);
     hexchat_pluginpref_set_str(ph, "character_pass", word[4]);
     hexchat_print(ph, "Character name and password changed");
+  } else if(!strcmp(word[2], "highlight_word")) {
+    int WordNum = strtol(word[3], NULL, 10);
+    if(WordNum < 0 || WordNum >= MAX_HIGHLIGHTS) {
+      hexchat_printf(ph, "Invalid highlight number, use 0 to %i\n", 0, MAX_HIGHLIGHTS-1);
+      return HEXCHAT_EAT_ALL;
+    }
+    if(strlen(word[4]) < 30) {
+      strcpy(HighlightWord[WordNum], word_eol[4]);
+      char Temp[50];
+      sprintf(Temp, "highlight_word_%i", WordNum);
+      hexchat_pluginpref_set_str(ph, Temp, HighlightWord[WordNum]);
+      hexchat_printf(ph, "Will give a highlight for \"%s\" when it's seen (slot %i)\n", word[4], WordNum);
+    }
+  } else if(!strcmp(word[2], "echo_cmd")) {
+    int CommandNum = strtol(word[3], NULL, 10);
+    if(CommandNum < 0 || CommandNum >= MAX_ECHO_CMD) {
+      hexchat_printf(ph, "Invalid command number, use 0 to %i\n", 0, MAX_ECHO_CMD-1);
+      return HEXCHAT_EAT_ALL;
+    }
+    if(strlen(word[4]) < 20) {
+      strcpy(EchoCommand[CommandNum], word[4]);
+      char Temp[50];
+      sprintf(Temp, "echo_cmd_%i", CommandNum);
+      hexchat_pluginpref_set_str(ph, Temp, EchoCommand[CommandNum]);
+      hexchat_printf(ph, "Will echo the command \"%s\" when it's used (slot %i)\n", word[4], CommandNum);
+    }
   } else if(!strcmp(word[2], "zombie")) {
     int ZombieNum = strtol(word[3], NULL, 10);
     if(ZombieNum < 0 || ZombieNum >= MAX_ZOMBIES) {
@@ -441,7 +555,8 @@ static int Settings_cb(char *word[], char *word_eol[], void *userdata) {
   } else if(!strcmp(word[2], "page_tabs") || !strcmp(word[2], "whisper_tabs") ||
             !strcmp(word[2], "auto_quote") || !strcmp(word[2], "ignore_away") ||
             !strcmp(word[2], "eat_pages") || !strcmp(word[2], "bold_whisper") ||
-            !strcmp(word[2], "flash_whisper") || !strcmp(word[2], "multi_pages")) {
+            !strcmp(word[2], "flash_whisper") || !strcmp(word[2], "multi_pages") ||
+            !strcmp(word[2], "server_flash")) {
     int NewValue = TextToBoolean(word[2]);
     if(NewValue == -1)
       hexchat_print(ph, "Invalid value (use on/off)\n");
@@ -464,6 +579,8 @@ static int Settings_cb(char *word[], char *word_eol[], void *userdata) {
         BoldWhisper = NewValue;
       else if(!strcmp(word[2], "flash_whisper"))
         FlashWhisper = NewValue;
+      else if(!strcmp(word[2], "server_flash"))
+        FlashOnMessage = NewValue;
     }
   } else if(!strcmp(word[2], "muck_identifier") || !strcmp(word[2], "idle_timeout_string")) {
     hexchat_pluginpref_set_str(ph, word[2], word_eol[3]);
@@ -476,7 +593,15 @@ static int Settings_cb(char *word[], char *word_eol[], void *userdata) {
     } else if(!strcmp(word[2], "idle_timeout_string")) {
       strcpy(IdleTimeoutString, word_eol[3]);
     }
+  } else if(!strcmp(word[2], "highlight_level")) {
+    const char *Names[] = {"None", "Colors only", "Colors+Tab color", "Colors+Tab color+Flash"};
+    HighlightLevel = strtol(word[3], NULL, 10) & 3;
+    hexchat_printf(ph, "Highlight level set to %i (%s)", HighlightLevel, Names[HighlightLevel]);
+  } else if(!strcmp(word[2], "highlight_color")) {
+    HighlightColor = strtol(word[3], NULL, 10);
+    hexchat_printf(ph, "\x03%i Highlight color changed", HighlightColor);
   }
+
   return HEXCHAT_EAT_HEXCHAT;
 }
 
@@ -493,6 +618,8 @@ int hexchat_plugin_init(hexchat_plugin *plugin_handle,
   memset(ServerId, -1, sizeof(ServerId)); // due to two's complement this will get set to negative 1
   memset(ZombieCommand, 0, sizeof(ZombieCommand));
   memset(ZombieName, 0, sizeof(ZombieName));
+  memset(HighlightWord, 0, sizeof(HighlightWord));
+  memset(EchoCommand, 0, sizeof(EchoCommand));
 
   PageTabs = GetIntOrDefault("page_tabs", 1);
   WhisperTabs = GetIntOrDefault("whisper_tabs", 0);
@@ -503,6 +630,7 @@ int hexchat_plugin_init(hexchat_plugin *plugin_handle,
   FlashWhisper = GetIntOrDefault("flash_whisper", 1);
   MultiPages = GetIntOrDefault("multi_pages", 1);
   HighlightColor = GetIntOrDefault("highlight_color", 9);
+  HighlightLevel = GetIntOrDefault("highlight_level", HIGHLIGHT_COLOR);
 
   hexchat_pluginpref_get_str(ph, "idle_timeout_string", IdleTimeoutString);
   hexchat_pluginpref_get_str(ph, "muck_identifier", MuckIdentifier);
@@ -514,6 +642,14 @@ int hexchat_plugin_init(hexchat_plugin *plugin_handle,
     hexchat_pluginpref_get_str(ph, Temp, ZombieName[i]);
     sprintf(Temp, "zombie_action_%i", i);
     hexchat_pluginpref_get_str(ph, Temp, ZombieCommand[i]);
+  }
+  for(int i=0; i<MAX_ECHO_CMD; i++) {
+    sprintf(Temp, "echo_cmd_%i", i);
+    hexchat_pluginpref_get_str(ph, Temp, EchoCommand[i]);
+  }
+  for(int i=0; i<MAX_HIGHLIGHTS; i++) {
+    sprintf(Temp, "highlight_word_%i", i);
+    hexchat_pluginpref_get_str(ph, Temp, HighlightWord[i]);
   }
 
   hexchat_hook_command(ph, "", HEXCHAT_PRI_NORM, TrapSay_cb, NULL, 0);
