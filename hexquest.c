@@ -278,11 +278,13 @@ static int RawServer_cb(char *word[], char *word_eol[], void *userdata) {
       strcpy(Lowercase, Input);
       for(int i=0; Lowercase[i]; i++)
         Lowercase[i] = tolower(Lowercase[i]);
-      for(int i=0; i<MAX_HIGHLIGHTS; i++)
-        if(HighlightWord[i][0] && strstr(Lowercase, HighlightWord[i])) {
+      for(int i=0; i<MAX_HIGHLIGHTS; i++) {
+        char *WordFound = strstr(Lowercase, HighlightWord[i]);
+        if(HighlightWord[i][0] && WordFound && WordFound != Lowercase) {
           HasHighlight = 1;
           break;
         }
+      }
 
       if(HasHighlight) {
         if(HighlightLevel >= 2)
