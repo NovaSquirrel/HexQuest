@@ -255,6 +255,8 @@ static int RawServer_cb(char *word[], char *word_eol[], void *userdata) {
     }
     int PageActThem2 = WildMatch(word_eol[1], PageActThem);
     int PageSayThem2 = WildMatch(word_eol[1], PageSayThem);
+    int WhisperYou2 = WildMatch(word_eol[1], WhisperYou);
+    int WhisperThem2 = WildMatch(word_eol[1], WhisperThem);
     int NotPrivmsg = !strstr(word_eol[1], "PRIVMSG");
 
     for(int i=0; i<MAX_ZOMBIES; i++)
@@ -269,7 +271,7 @@ static int RawServer_cb(char *word[], char *word_eol[], void *userdata) {
         }
       }
 
-    if(HighlightLevel && !PageActThem2 && !PageSayThem2 && !strchr(word_eol[1], 3)
+    if(HighlightLevel && !PageActThem2 && !PageSayThem2 && !WhisperYou2 && !WhisperThem2 && !strchr(word_eol[1], 3)
      && word_eol[1][0]!=2 && NotPrivmsg) { // skip if it's a highlighted thing already
       char *Input = word_eol[1];
 
@@ -333,13 +335,13 @@ static int RawServer_cb(char *word[], char *word_eol[], void *userdata) {
       hexchat_print(ph, "Idle timeout, please reconnect manually");
       hexchat_command(ph, "server 127.0.0.1");
       hexchat_command(ph, "timer 1 quit");
-    } else if(word_eol[1][0]!=2 && (WildMatch(word_eol[1], WhisperYou))) {
+    } else if(word_eol[1][0]!=2 && WhisperYou2) {
       WildExtract(word_eol[1], WhisperYou, Output, 2);
       hexchat_commandf(ph, "recv \x02%s", word_eol[1]);
       strcpy(WhisperTo, Output[1]);
       WildExtractFree(Output, 2);
       return HEXCHAT_EAT_HEXCHAT;
-    } else if(word_eol[1][0]!=2 && (WildMatch(word_eol[1], WhisperThem))) {
+    } else if(word_eol[1][0]!=2 && WhisperThem2) {
       hexchat_commandf(ph, "recv \x02%s", word_eol[1]);
 
       // find the server tab and switch to its context temporarily
