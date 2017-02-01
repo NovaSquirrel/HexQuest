@@ -519,11 +519,14 @@ static int Settings_cb(char *word[], char *word_eol[], void *userdata) {
       return HEXCHAT_EAT_ALL;
     }
     if(strlen(word[4]) < 30) {
-      strcpy(HighlightWord[WordNum], word_eol[4]);
       char Temp[50];
+      strcpy(Temp, word_eol[4]);
+      for(int i=0; Temp[i]; i++)
+        Temp[i] = tolower(Temp[i]);
+      strcpy(HighlightWord[WordNum], Temp);
       sprintf(Temp, "highlight_word_%i", WordNum);
       hexchat_pluginpref_set_str(ph, Temp, HighlightWord[WordNum]);
-      hexchat_printf(ph, "Will give a highlight for \"%s\" when it's seen (slot %i)\n", word[4], WordNum);
+      hexchat_printf(ph, "Will give a highlight for \"%s\" when it's seen (slot %i)\n", word_eol[4], WordNum);
     }
   } else if(!strcmp(word[2], "echo_cmd")) {
     int CommandNum = strtol(word[3], NULL, 10);
