@@ -253,6 +253,8 @@ static int RawServer_cb(char *word[], char *word_eol[], void *userdata) {
       hexchat_commandf(ph, "recv \x2\x2%s", word_eol[1]);
       return HEXCHAT_EAT_ALL;
     }
+    int PageSayYou2 = WildMatch(word_eol[1], PageSayYou);
+    int PageActYou2 = WildMatch(word_eol[1], PageActYou);
     int PageActThem2 = WildMatch(word_eol[1], PageActThem);
     int PageSayThem2 = WildMatch(word_eol[1], PageSayThem);
     int WhisperYou2 = WildMatch(word_eol[1], WhisperYou);
@@ -271,7 +273,7 @@ static int RawServer_cb(char *word[], char *word_eol[], void *userdata) {
         }
       }
 
-    if(HighlightLevel && !PageActThem2 && !PageSayThem2 && !WhisperYou2 && !WhisperThem2 && !strchr(word_eol[1], 3)
+    if(HighlightLevel && !PageActThem2 && !PageSayThem2 && !PageActYou2 && !PageSayYou2 && !WhisperYou2 && !WhisperThem2 && !strchr(word_eol[1], 3)
      && word_eol[1][0]!=2 && NotPrivmsg) { // skip if it's a highlighted thing already
       char *Input = word_eol[1];
 
@@ -374,7 +376,7 @@ static int RawServer_cb(char *word[], char *word_eol[], void *userdata) {
         *As = 0;
 
       hexchat_commandf(ph, "recv :%s 001 %s :(changing name in HexChat)", hexchat_get_info(ph, "network"), Name);
-    } else if(WildMatch(word_eol[1], PageSayYou)) {
+    } else if(PageSayYou2) {
       WildExtract(word_eol[1], PageSayYou, Output, 2);
 
       // Switch to the appropriate context, make an event, and switch back
@@ -395,7 +397,7 @@ static int RawServer_cb(char *word[], char *word_eol[], void *userdata) {
       WildExtractFree(Output, 2);
       if(EatPages)
         return HEXCHAT_EAT_HEXCHAT;
-    } else if(WildMatch(word_eol[1], PageActYou)) {
+    } else if(PageActYou2) {
       WildExtract(word_eol[1], PageActYou, Output, 2);
       RemoveFirstWord(Output[0], Name);
 
