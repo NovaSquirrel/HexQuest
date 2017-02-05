@@ -50,7 +50,7 @@ Open a query to $Z0, where 0 is replaced by the zombie number, to do actions as 
 
  * Multi-person pages are not implemented yet, and they probably just go to the server tab.
  * Only one MUCK connection and character is supported at a time.
- * No notices when your name is said.
+ * Receiving text on a zombie will trigger whatever notifications that receiving a query triggers.
 
 ## A MUCK tutorial for IRC users
 [NovaSquirrel's MUCK tutorial, using HexChat](http://wiki.novasquirrel.com/MUCK%20tutorial).
