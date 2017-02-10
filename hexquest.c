@@ -222,9 +222,9 @@ int WildMatch(const char *TestMe, const char *Wild) {
 
 // Takes a boolean string and converts it to a value
 static int TextToBoolean(const char *Text) {
-  if(!strcmp(Text, "yes") || !strcmp(Text, "on"))
+  if(!strcasecmp(Text, "yes") || !strcasecmp(Text, "on"))
     return 1;
-  if(!strcmp(Text, "no") || !strcmp(Text, "off"))
+  if(!strcasecmp(Text, "no") || !strcasecmp(Text, "off"))
     return 0;
   return -1;
 }
@@ -566,7 +566,7 @@ static int Settings_cb(char *word[], char *word_eol[], void *userdata) {
             !strcmp(word[2], "eat_pages") || !strcmp(word[2], "bold_whisper") ||
             !strcmp(word[2], "flash_whisper") || !strcmp(word[2], "multi_pages") ||
             !strcmp(word[2], "server_flash")) {
-    int NewValue = TextToBoolean(word[2]);
+    int NewValue = TextToBoolean(word[3]);
     if(NewValue == -1)
       hexchat_print(ph, "Invalid value (use on/off)\n");
     else {

@@ -14,7 +14,7 @@ This way you get all the features HexChat has while using MUCK servers, and more
  * Set specific words to be highlighted in a different color
 
 ## Features
-Each can be enabled or disabled with `/hquest feature_name on/off`
+Each can be enabled or disabled with `/hquest feature_name on/off`. For example, to turn `server_flash` on, you'd do `/hquest server_flash on`.
 
  * `page_tabs` - Moves pages to a separate tab.
  * `auto_quote` - Automatically converts messages typed on the server tab into server commands. Also converts /me to a pose.
@@ -42,7 +42,9 @@ Additionally, if `bold_whisper` is enabled, pressing the tab key on the server t
 
 ## Zombies
 
-You can have 5 zombies by default, numbered 0 to 4. Use `/hquest zombie_name_NUMBER` to specify the in-world name of the zombie, and `/hquest zombie_action_NUMBER` to specify the special prefix command used to send commands to the zombie.
+You can have 5 zombies by default, numbered 0 to 4. Use `/hquest zombie number prefix name` to specify the in-world name of the zombie as well as the command prefix you have set for the zombie.
+
+For example, I have the command prefix set to `aaa` and my zombie is named `'NovaSquirrel`, so I do `/hquest zombie 0 aaa 'NovaSquirrel`.
 
 Open a query to $Z0, where 0 is replaced by the zombie number, to do actions as that zombie.
 
