@@ -74,6 +74,24 @@ static const char *MeetMeSummon = "MEETME:  * would like you to join them.  Plea
 // Feature toggles
 static int PageTabs, WhisperTabs, AutoQuote, IgnoreAway, EatPages, BoldWhisper, FlashWhisper, MultiPages;
 
+void color3() {
+  // find the server tab and switch to its context temporarily
+  hexchat_context *Context = hexchat_get_context(ph);
+  int Id;  
+  hexchat_get_prefs(ph, "id", NULL, &Id);
+
+  // find the tab via searching through all tabs
+  hexchat_list *list = hexchat_list_get(ph, "channels");
+  if(list) {
+    while(hexchat_list_next(ph, list))
+      if(hexchat_list_int(ph, list, "type")==1 && hexchat_list_int(ph, list, "id")==Id) // server tab, and same ID
+        if(hexchat_set_context(ph,(hexchat_context *)hexchat_list_str(ph, list, "context")))
+          hexchat_commandf(ph, "gui color 3");
+    hexchat_list_free(ph, list);
+  }
+  hexchat_set_context(ph, Context);
+}
+
 void hexchat_plugin_get_info(char **name, char **desc, char **version, void **reserved) {
   *name = PNAME;
   *desc = PDESC;
@@ -350,7 +368,7 @@ static int RawServer_cb(char *word[], char *word_eol[], void *userdata) {
 
       if(HasHighlight) {
         if(MaxHighlightLevel >= 2)
-          hexchat_commandf(ph, "gui color 3");
+          color3();
         if(MaxHighlightLevel >= 3)
           hexchat_commandf(ph, "gui flash");
       
@@ -396,7 +414,7 @@ static int RawServer_cb(char *word[], char *word_eol[], void *userdata) {
       hexchat_command(ph, "server 127.0.0.1");
       hexchat_command(ph, "timer 1 quit");
     } else if(word_eol[1][0]!=2 && (PageSayThemMulti2 || PageActThemMulti2)) {
-      hexchat_commandf(ph, "gui color 3");
+      color3();
       hexchat_commandf(ph, "gui flash");
       return HEXCHAT_EAT_HEXCHAT;
     } else if(word_eol[1][0]!=2 && WhisperYou2) {
@@ -408,21 +426,7 @@ static int RawServer_cb(char *word[], char *word_eol[], void *userdata) {
     } else if(word_eol[1][0]!=2 && WhisperThem2) {
       hexchat_commandf(ph, "recv \x02%s", word_eol[1]);
 
-      // find the server tab and switch to its context temporarily
-      hexchat_context *Context = hexchat_get_context(ph);
-      int Id;  
-      hexchat_get_prefs(ph, "id", NULL, &Id);
-
-      // find the tab via searching through all tabs
-      hexchat_list *list = hexchat_list_get(ph, "channels");
-      if(list) {
-        while(hexchat_list_next(ph, list))
-          if(hexchat_list_int(ph, list, "type")==1 && hexchat_list_int(ph, list, "id")==Id) // server tab, and same ID
-            if(hexchat_set_context(ph,(hexchat_context *)hexchat_list_str(ph, list, "context")))
-              hexchat_commandf(ph, "gui color 3");
-        hexchat_list_free(ph, list);
-      }
-      hexchat_set_context(ph, Context);
+      color3();
 
       if(FlashWhisper)
         hexchat_commandf(ph, "gui flash");
