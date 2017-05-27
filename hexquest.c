@@ -57,7 +57,7 @@ static int HighlightColor = 9;
 static int HighlightLevel = 0;
 static int FlashOnMessage = 0;
 static int MeetMeNotifier = 0;
-static int ZombieUsePrintEvents = 0;
+static int ZombieUsePrint = 0;
 
 // Mask constants
 static const char *PageSayYou = "You page, \"*\" to *.";
@@ -300,13 +300,13 @@ static int RawServer_cb(char *word[], char *word_eol[], void *userdata) {
           sprintf(QueryName, "$Z%i", i);
 
           // Use a print event instead if it's enabled and if the window is open
-          if(ZombieUsePrintEvents) {
+          if(ZombieUsePrint) {
             hexchat_context *ZombieContext = hexchat_find_context(ph, NULL, QueryName);
             if(ZombieContext) {
               hexchat_context *OldContext = hexchat_get_context(ph);
               hexchat_set_context(ph, ZombieContext);
               hexchat_command(ph, "gui color 2");
-              hexchat_emit_print(ph, "Private Message to Dialog", "", StartOfText+2, NULL);
+              hexchat_print(ph, StartOfText+2);
               hexchat_set_context(ph, OldContext);
             }
             return HEXCHAT_EAT_HEXCHAT;
@@ -731,7 +731,7 @@ int hexchat_plugin_init(hexchat_plugin *plugin_handle,
   MeetMeNotifier = GetIntOrDefault("meetme_notifier", 1);
   HighlightColor = GetIntOrDefault("highlight_color", 9);
   HighlightLevel = GetIntOrDefault("highlight_level", HIGHLIGHT_COLOR);
-  ZombieUsePrintEvents = GetIntOrDefault("zombie_print_events", 1);
+  ZombieUsePrint = GetIntOrDefault("zombie_print_events", 1);
 
   hexchat_pluginpref_get_str(ph, "idle_timeout_string", IdleTimeoutString);
   hexchat_pluginpref_get_str(ph, "muck_identifier", MuckIdentifier);
