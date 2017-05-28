@@ -326,8 +326,8 @@ static int RawServer_cb(char *word[], char *word_eol[], void *userdata) {
               hexchat_command(ph, "gui color 2");
               hexchat_print(ph, StartOfText+2);
               hexchat_set_context(ph, OldContext);
+              return HEXCHAT_EAT_HEXCHAT;
             }
-            return HEXCHAT_EAT_HEXCHAT;
           }
  
           ZombieIgnore = 1;
