@@ -23,6 +23,7 @@ Each can be enabled or disabled with `/hquest feature_name on/off`. For example,
  * `bold_whisper` - Bolds lines containing whispers.
  * `flash_whisper` - (Requires `bold_whisper`) Makes HexChat's tab flash when you get whispered.
  * `server_flash` - Flash HexChat's tab any time anyone sends any text. Not saved in the config file.
+ * `zombie_print_events` - Use printing instead of privmsg for zombies, so you don't get notifications for every line of text.
 
 Additionally, if `bold_whisper` is enabled, pressing the tab key on the server tab will fill in a whisper addressed to the most recent person you whispered to.
 

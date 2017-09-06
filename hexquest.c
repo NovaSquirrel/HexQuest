@@ -19,7 +19,7 @@
 
 #define PNAME "HexQuest"
 #define PDESC "MUCK extensions for HexChat"
-#define PVERSION "0.06"
+#define PVERSION "0.07"
 #include "hexchat-plugin.h"
 #include <stdio.h>
 #include <string.h>
@@ -58,6 +58,7 @@ static int HighlightLevel = 0;
 static int FlashOnMessage = 0;
 static int MeetMeNotifier = 0;
 static int ZombieUsePrint = 0;
+static char HighlightReason[8192] = "";
 
 // Mask constants
 static const char *PageSayYou = "You page, \"*\" to *.";
@@ -295,7 +296,7 @@ static int RawServer_cb(char *word[], char *word_eol[], void *userdata) {
       return HEXCHAT_EAT_ALL;
     }
     if(word_eol[1][0] == '@') { // at least one person's name starts with @
-      hexchat_commandf(ph, "recv \x2\x2%s", word_eol[1]);
+      hexchat_commandf(ph, "recv (at)%s", word_eol[1][1]);
       return HEXCHAT_EAT_ALL;
     }
     // Checks some masks
@@ -367,8 +368,10 @@ static int RawServer_cb(char *word[], char *word_eol[], void *userdata) {
       }
 
       if(HasHighlight) {
-        if(MaxHighlightLevel >= 2)
+        if(MaxHighlightLevel >= 2) {
+          sprintf(HighlightReason, "Message: %s", Input);
           color3();
+        }
         if(MaxHighlightLevel >= 3)
           hexchat_commandf(ph, "gui flash");
       
@@ -414,9 +417,10 @@ static int RawServer_cb(char *word[], char *word_eol[], void *userdata) {
       hexchat_command(ph, "server 127.0.0.1");
       hexchat_command(ph, "timer 1 quit");
     } else if(word_eol[1][0]!=2 && (PageSayThemMulti2 || PageActThemMulti2)) {
+      sprintf(HighlightReason, "Page: %s", word_eol[1]);
       color3();
       hexchat_commandf(ph, "gui flash");
-      return HEXCHAT_EAT_HEXCHAT;
+      return HEXCHAT_EAT_NONE;
     } else if(word_eol[1][0]!=2 && WhisperYou2) {
       WildExtract(word_eol[1], WhisperYou, Output, 2);
       hexchat_commandf(ph, "recv \x02%s", word_eol[1]);
@@ -425,6 +429,7 @@ static int RawServer_cb(char *word[], char *word_eol[], void *userdata) {
       return HEXCHAT_EAT_HEXCHAT;
     } else if(word_eol[1][0]!=2 && WhisperThem2) {
       hexchat_commandf(ph, "recv \x02%s", word_eol[1]);
+      sprintf(HighlightReason, "Whisper: %s", word_eol[1]);
 
       color3();
 
@@ -658,7 +663,8 @@ static int Settings_cb(char *word[], char *word_eol[], void *userdata) {
             !strcmp(word[2], "auto_quote") || !strcmp(word[2], "ignore_away") ||
             !strcmp(word[2], "eat_pages") || !strcmp(word[2], "bold_whisper") ||
             !strcmp(word[2], "flash_whisper") || !strcmp(word[2], "multi_pages") ||
-            !strcmp(word[2], "server_flash") || !strcmp(word[2], "meetme_notifier")) {
+            !strcmp(word[2], "server_flash") || !strcmp(word[2], "meetme_notifier") ||
+            !strcmp(word[2], "zombie_print_events")) {
     int NewValue = TextToBoolean(word[3]);
     if(NewValue == -1)
       hexchat_print(ph, "Invalid value (use on/off)\n");
@@ -685,6 +691,8 @@ static int Settings_cb(char *word[], char *word_eol[], void *userdata) {
         FlashOnMessage = NewValue;
       else if(!strcmp(word[2], "meetme_notifier"))
         MeetMeNotifier = NewValue;
+      else if(!strcmp(word[2], "zombie_print_events"))
+        ZombieUsePrint = NewValue;
     }
   } else if(!strcmp(word[2], "muck_identifier") || !strcmp(word[2], "idle_timeout_string")) {
     hexchat_pluginpref_set_str(ph, word[2], word_eol[3]);
@@ -703,8 +711,9 @@ static int Settings_cb(char *word[], char *word_eol[], void *userdata) {
   } else if(!strcmp(word[2], "highlight_color")) {
     HighlightColor = strtol(word[3], NULL, 10);
     hexchat_printf(ph, "\x03%i Highlight color changed", HighlightColor);
+  } else if(!strcmp(word[2], "highlight_reason")) {
+    hexchat_printf(ph, "Highlight reason: %s", HighlightReason);
   }
-
   return HEXCHAT_EAT_HEXCHAT;
 }
 
