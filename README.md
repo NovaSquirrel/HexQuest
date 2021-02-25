@@ -22,7 +22,8 @@ Each can be enabled or disabled with `/hquest feature_name on/off`. For example,
  * `eat_pages` - If `page_tabs` is on, the pages will only appear in the separate tab, not the server one.
  * `bold_whisper` - Bolds lines containing whispers.
  * `flash_whisper` - (Requires `bold_whisper`) Makes HexChat's tab flash when you get whispered.
- * `server_flash` - Flash HexChat's tab any time anyone sends any text. Not saved in the config file.
+ * `server_flash` - Flash HexChat's tab any time the server tab receives text. Not saved in the config file.
+ * `zombie_flash` - Flash HexChat's tab any time a zombie receives text. Not saved in the config file.
  * `zombie_print_events` - Use printing instead of privmsg for zombies, so you don't get notifications for every line of text.
 
 Additionally, if `bold_whisper` is enabled, pressing the tab key on the server tab will fill in a whisper addressed to the most recent person you whispered to.
@@ -43,7 +44,7 @@ Additionally, if `bold_whisper` is enabled, pressing the tab key on the server t
 
 ## Zombies
 
-You can have 5 zombies by default, numbered 0 to 4. Use `/hquest zombie number prefix name` to specify the in-world name of the zombie as well as the command prefix you have set for the zombie.
+You can have 10 zombies by default, numbered 0 to 9. Use `/hquest zombie number prefix name` to specify the in-world name of the zombie as well as the command prefix you have set for the zombie.
 
 For example, I have the command prefix set to `aaa` and my zombie is named `'NovaSquirrel`, so I do `/hquest zombie 0 aaa 'NovaSquirrel`.
 
@@ -53,7 +54,6 @@ Open a query to $Z0, where 0 is replaced by the zombie number, to do actions as 
 
  * Multi-person pages are not implemented yet, and they probably just go to the server tab.
  * Only one MUCK connection and character is supported at a time.
- * Receiving text on a zombie will trigger whatever notifications that receiving a query triggers.
 
 ## A MUCK tutorial for IRC users
 [NovaSquirrel's MUCK tutorial, using HexChat](http://wiki.novasquirrel.com/MUCK%20tutorial).
