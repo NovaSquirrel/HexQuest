@@ -625,7 +625,6 @@ static const char *GetZombiePrefix() {
 
 		// Also remove the zombie suffix here too
 		if(strstr(prefix_for_query, "(Z)")) {
-			hexchat_print(ph, "yes zombie");
 			char *Paren = strrchr(prefix_for_query, '(');
 			if(Paren) {
 				Paren[0] = '=';
