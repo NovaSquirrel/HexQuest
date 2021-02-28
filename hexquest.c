@@ -19,7 +19,7 @@
 
 #define PNAME "HexQuest"
 #define PDESC "MUCK extensions for HexChat"
-#define PVERSION "0.09"
+#define PVERSION "0.10"
 #include "hexchat-plugin.h"
 #include <stdio.h>
 #include <string.h>
@@ -47,7 +47,7 @@ static hexchat_plugin *ph;
 static int ServerId[MAX_SERVERS];
 static char MuckIdentifier[100] = "#$#mcp version:";
 static int MuckIdentifierLen = 15;
-static char IdleTimeoutString[512] = "A large crane gently grabs you, pulls you towards a large plastic partition, and drops you into the prize bin.	You roll to someplace out of the muck.";
+static char IdleTimeoutString[512] = "A large crane gently grabs you, pulls you towards a large plastic partition, and drops you into the prize bin.  You roll to someplace out of the muck.";
 
 static char WhisperTo[100]="";                     // Last person you whispered to
 static char ZombieCommand[MAX_ZOMBIES][100];       // Command prefixes to use to do something as a zombie instead
@@ -496,6 +496,14 @@ static int RawServer_cb(char *word[], char *word_eol[], void *userdata) {
 
 	// If it's the MUCK server, enable HexQuest's features
 	if(IsMUCK()) {
+		// Don't auto reconnect if the disconnect happened due to inactivity
+		if(!strcmp(word_eol[1], IdleTimeoutString)) {
+			hexchat_print(ph, "Idle timeout, please reconnect manually");
+			hexchat_command(ph, "server 127.0.0.1");
+			hexchat_command(ph, "timer 1 quit");
+			return HEXCHAT_EAT_NONE;
+		}
+
 		if(ZombieIgnore) {
 			ZombieIgnore = 0;
 			return HEXCHAT_EAT_NONE;
@@ -553,21 +561,16 @@ static int RawServer_cb(char *word[], char *word_eol[], void *userdata) {
 
 				ZombieIgnore = 1;
 				// Calling ProcessHighlights here won't work with highlighting the tab correctly, but that doesn't matter a lot
-				hexchat_commandf(ph, "recv :%s!_@_ PRIVMSG you :%s", QueryName, ProcessHighlights(StartOfText+2, 1)?MessageTransformBuffer:StartOfText+2);
+				hexchat_commandf(ph, "recv :%s!%s@_ PRIVMSG you :%s", QueryName, StrippedName, ProcessHighlights(StartOfText+2, 1)?MessageTransformBuffer:StartOfText+2);
 				return HEXCHAT_EAT_HEXCHAT;
 			}
 
 		if(FlashOnMessage) // flash on all messages if you want
 			hexchat_commandf(ph, "gui flash");
 
-		// Don't auto reconnect if the disconnect happened due to inactivity
 		// Try parsing the different kinds of message we want special behavior for
 		char Name[100];  // Name to extract from some message types
-		if(!strcmp(word_eol[1], IdleTimeoutString)) {
-			hexchat_print(ph, "Idle timeout, please reconnect manually");
-			hexchat_command(ph, "server 127.0.0.1");
-			hexchat_command(ph, "timer 1 quit");
-		} else if(WildMatch(word_eol[1], ConnectedAs)) {
+		if(WildMatch(word_eol[1], ConnectedAs)) {
 			// Get the name
 			char *As = strstr(word_eol[1], "as");
 			if(!As)
