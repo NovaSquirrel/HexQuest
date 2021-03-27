@@ -753,7 +753,7 @@ static int Settings_cb(char *word[], char *word_eol[], void *userdata) {
 						!strcmp(word[2], "eat_pages") || !strcmp(word[2], "bold_whisper") ||
 						!strcmp(word[2], "flash_whisper") || !strcmp(word[2], "multi_pages") ||
 						!strcmp(word[2], "server_flash") || !strcmp(word[2], "meetme_notifier") ||
-						!strcmp(word[2], "zombie_print_events")) {
+						!strcmp(word[2], "zombie_print_events") || !strcmp(word[2], "zombie_flash")) {
 		int NewValue = TextToBoolean(word[3]);
 		if(NewValue == -1)
 			hexchat_print(ph, "Invalid value (use on/off)\n");
