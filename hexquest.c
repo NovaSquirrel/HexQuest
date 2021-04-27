@@ -19,7 +19,7 @@
 
 #define PNAME "HexQuest"
 #define PDESC "MUCK extensions for HexChat"
-#define PVERSION "0.10"
+#define PVERSION "0.11"
 #include "hexchat-plugin.h"
 #include <stdio.h>
 #include <string.h>
@@ -69,6 +69,7 @@ static int EatPages = 1;                           // Hide pages because PageTab
 static int BoldWhisper = 1;                        // Bold any whisper messages you receive
 static int FlashWhisper = 1;                       // "gui flash" when you're whispered to
 static int MultiPages = 0;                         // Multiple person page support - not implemented
+static int CloseQueriesOnIdleKick = 1;             // Close queries when you're kicked for idling out
 
 static char HighlightReason[MAX_MESSAGE_LEN] = "";
 static char MessageTransformBuffer[MAX_MESSAGE_LEN+4];
@@ -276,6 +277,19 @@ static int TextToBoolean(const char *Text) {
 	return -1;
 }
 
+// Separates possessives and contractions out from a name
+void ContractionFix(char *name, char *output) {
+	// Can be an apostrophe followed by one or two characters
+	char *apostrophe = strrchr(name, '\'');
+	if(!apostrophe || apostrophe == name || (apostrophe[2] != 0 && apostrophe[3] != 0))
+		return;
+	int len = strlen(apostrophe);
+	memmove(output+len+1, output, strlen(output)+1);
+	memcpy(output, apostrophe, len);
+	output[len] = ' ';
+	*apostrophe = 0;
+}
+
 // Hack to prevent some problems
 static int ZombieIgnore = 0;
 
@@ -329,13 +343,7 @@ static int ProcessPages(const char *prefix, const char *your_name, const char *m
 		}
 		hexchat_set_context(ph, Context);
 
-		char *Apostrophe = strrchr(Name, '\'');
-		if(Apostrophe && Apostrophe != Name && Apostrophe[1] == 's') { // fix 's
-			memmove(Output[0]+3, Output[0], strlen(Output[0])+1);
-			Output[0][0] = '\'';
-			Output[0][1] = 's';
-			Output[0][2] = ' ';
-		}
+		ContractionFix(Name, Output[0]);
 		hexchat_emit_print(ph, "Your Action", your_name, Output[0], "", NULL);
 		hexchat_set_context(ph, Old);
 
@@ -354,15 +362,7 @@ static int ProcessPages(const char *prefix, const char *your_name, const char *m
 	} else if(WildMatch(message, PageActThem)) {
 		WildExtract(message, PageActThem, Output, 2);
 		RemoveFirstWord(Output[0], Name);
-
-		char *Apostrophe = strrchr(Name, '\'');
-		if(Apostrophe && Apostrophe != Name && Apostrophe[1] == 's') { // fix 's
-			memmove(Output[0]+3, Output[0], strlen(Output[0])+1);
-			Output[0][0] = '\'';
-			Output[0][1] = 's';
-			Output[0][2] = ' ';
-			*Apostrophe = 0;
-		}
+		ContractionFix(Name, Output[0]);
 		if(prefix)
 			hexchat_commandf(ph, "recv :%s-%s!_@_ PRIVMSG you :\x01" "ACTION %s\x01", prefix, Name, Output[0]);
 		else
@@ -499,6 +499,8 @@ static int RawServer_cb(char *word[], char *word_eol[], void *userdata) {
 		// Don't auto reconnect if the disconnect happened due to inactivity
 		if(!strcmp(word_eol[1], IdleTimeoutString)) {
 			hexchat_print(ph, "Idle timeout, please reconnect manually");
+			if(CloseQueriesOnIdleKick)
+				hexchat_command(ph, "close -m");
 			hexchat_command(ph, "server 127.0.0.1");
 			hexchat_command(ph, "timer 1 quit");
 			return HEXCHAT_EAT_NONE;
@@ -784,6 +786,8 @@ static int Settings_cb(char *word[], char *word_eol[], void *userdata) {
 				MeetMeNotifier = NewValue;
 			else if(!strcmp(word[2], "zombie_print_events"))
 				ZombieUsePrint = NewValue;
+			else if(!strcmp(word[2], "close_queries_on_idle_kick"))
+				CloseQueriesOnIdleKick = NewValue;
 		}
 	} else if(!strcmp(word[2], "muck_identifier") || !strcmp(word[2], "idle_timeout_string")) {
 		hexchat_pluginpref_set_str(ph, word[2], word_eol[3]);
@@ -836,6 +840,7 @@ int hexchat_plugin_init(hexchat_plugin *plugin_handle,
 	HighlightColor = GetIntOrDefault("highlight_color", 9);
 	HighlightLevel = GetIntOrDefault("highlight_level", HIGHLIGHT_COLOR);
 	ZombieUsePrint = GetIntOrDefault("zombie_print_events", 1);
+	CloseQueriesOnIdleKick = GetIntOrDefault("close_queries_on_idle_kick", 1);
 
 	hexchat_pluginpref_get_str(ph, "idle_timeout_string", IdleTimeoutString);
 	hexchat_pluginpref_get_str(ph, "muck_identifier", MuckIdentifier);
