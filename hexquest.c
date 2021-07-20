@@ -633,7 +633,7 @@ static const char *GetZombiePrefix() {
 		ZombieNum = strtol(&Tab[2], NULL, 10);
 	} else { // Find the tab code
 		for(int i=0; i<MAX_ZOMBIES; i++) {
-			if(strcmp(ZombieTabCode[i], Tab+2)) {
+			if(!strcmp(ZombieTabCode[i], Tab+2)) {
 				ZombieNum = i;
 				break;
 			}
