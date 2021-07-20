@@ -52,7 +52,7 @@ static char IdleTimeoutString[512] = "A large crane gently grabs you, pulls you 
 static char WhisperTo[100]="";                     // Last person you whispered to
 static char ZombieCommand[MAX_ZOMBIES][100];       // Command prefixes to use to do something as a zombie instead
 static char ZombieName[MAX_ZOMBIES][50];           // Names to watch for that indicate text is for a zombie
-static char ZombieTabCode[MAX_ZOMBIES][5];         // Tab code for this zombie
+static char ZombieTabCode[MAX_ZOMBIES][10];         // Tab code for this zombie
 static char EchoCommand[MAX_ECHO_CMD][20];         // When these commands are done, print them
 static char HighlightWord[MAX_HIGHLIGHTS][30];     // Words to watch for and highlight
 static int HighlightLevelOverride[MAX_HIGHLIGHTS]; // Override HighlightLevel for specific words
