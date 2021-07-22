@@ -19,7 +19,7 @@
 
 #define PNAME "HexQuest"
 #define PDESC "MUCK extensions for HexChat"
-#define PVERSION "0.13"
+#define PVERSION "0.14"
 #include "hexchat-plugin.h"
 #include <stdio.h>
 #include <string.h>
@@ -629,11 +629,17 @@ static const char *GetZombiePrefix() {
 	const char *Dash = strchr(Tab, '-');
 	if(Tab[0] != '$' || Tab[1] != 'Z') // not a zombie
 		return "";
+	char CopiedTab[100];
+	strcpy(CopiedTab, Tab);
+	char *DeleteDash = strchr(CopiedTab, '-');
+	if(DeleteDash)
+		*DeleteDash = 0;
+
 	if(isdigit(Tab[2])) {
 		ZombieNum = strtol(&Tab[2], NULL, 10);
 	} else { // Find the tab code
 		for(int i=0; i<MAX_ZOMBIES; i++) {
-			if(!strcmp(ZombieTabCode[i], Tab+2)) {
+			if(!strcmp(ZombieTabCode[i], CopiedTab+2)) {
 				ZombieNum = i;
 				break;
 			}
