@@ -44,11 +44,15 @@ Additionally, if `bold_whisper` is enabled, pressing the tab key on the server t
 
 ## Zombies
 
-You can have 10 zombies by default, numbered 0 to 9. Use `/hquest zombie number prefix name` to specify the in-world name of the zombie as well as the command prefix you have set for the zombie.
+You can have 32 zombies by default, numbered 0 to 31. Use `/hquest zombie number prefix name` to specify the in-world name of the zombie as well as the command prefix you have set for the zombie.
 
 For example, I have the command prefix set to `aaa` and my zombie is named `'NovaSquirrel`, so I do `/hquest zombie 0 aaa 'NovaSquirrel`.
 
 Open a query to $Z0, where 0 is replaced by the zombie number, to do actions as that zombie.
+
+You can set use a short code for the query's name, instead of a number. Use `/hquest zombietab number code`. For example, `/hquest zombietab 0 i` will make it so that for the first zombie, it will use a query named `$Zi` instead of `$Z0`.
+
+Use `/hquest zombielist` to get a list of all of your zombies and their information.
 
 ## Limitations
 
